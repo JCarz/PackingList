@@ -54,6 +54,28 @@ enum PackingRuleEngine {
         trip.checklistItems.append(checklistItem)
     }
 
+    static func duplicateChecklist(from sourceTrip: Trip, to newTrip: Trip, in context: ModelContext) {
+        var addedPackingItemIDs = Set(newTrip.checklistItems.compactMap { $0.packingItem?.id })
+
+        for sourceItem in sourceTrip.checklistItems {
+            guard let packingItem = sourceItem.packingItem,
+                  !addedPackingItemIDs.contains(packingItem.id) else {
+                continue
+            }
+
+            let checklistItem = TripPackingItem(
+                trip: newTrip,
+                packingItem: packingItem,
+                quantity: sourceItem.quantity,
+                notes: sourceItem.notes,
+                wasManuallyAdded: sourceItem.wasManuallyAdded
+            )
+            context.insert(checklistItem)
+            newTrip.checklistItems.append(checklistItem)
+            addedPackingItemIDs.insert(packingItem.id)
+        }
+    }
+
     private static func containsMatch(_ values: [String], _ candidate: String) -> Bool {
         let normalizedCandidate = normalize(candidate)
 
