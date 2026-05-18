@@ -1,13 +1,13 @@
 import Foundation
 import SwiftData
 
-enum PackingRuleEngine {
+enum PackingListGenerator {
     static func matches(item: PackingItem, trip: Trip) -> Bool {
         if item.isAlwaysPacked {
             return true
         }
 
-        if containsMatch(item.tripTypes, trip.tripType) {
+        if item.selectedTripTypes.contains(trip.selectedTripType) {
             return true
         }
 
@@ -16,6 +16,10 @@ enum PackingRuleEngine {
         }
 
         return false
+    }
+
+    static func matchesManualItem(_ checklistItem: TripPackingItem) -> Bool {
+        checklistItem.wasManuallyAdded
     }
 
     static func generateChecklist(for trip: Trip, from items: [PackingItem], in context: ModelContext) {

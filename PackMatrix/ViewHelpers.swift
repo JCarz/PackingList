@@ -48,6 +48,12 @@ extension Array where Element == String {
     }
 }
 
+extension Array where Element == TripType {
+    var displayText: String {
+        isEmpty ? "Any" : map(\.displayName).joined(separator: ", ")
+    }
+}
+
 extension String {
     var commaSeparatedValues: [String] {
         split(separator: ",")

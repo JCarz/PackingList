@@ -95,8 +95,8 @@ private struct ItemRow: View {
         }
 
         var parts: [String] = []
-        if !item.tripTypes.isEmpty {
-            parts.append("Trips: \(item.tripTypes.displayText)")
+        if !item.selectedTripTypes.isEmpty {
+            parts.append("Trips: \(item.selectedTripTypes.displayText)")
         }
         if !item.destinations.isEmpty {
             parts.append("Destinations: \(item.destinations.displayText)")

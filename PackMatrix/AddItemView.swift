@@ -12,7 +12,7 @@ struct AddItemView: View {
     @State private var notes = ""
     @State private var isAlwaysPacked = false
     @State private var isOptional = false
-    @State private var selectedTripTypes: Set<String> = []
+    @State private var selectedTripTypes: Set<TripType> = []
     @State private var destinationsText = ""
 
     var body: some View {
@@ -35,8 +35,8 @@ struct AddItemView: View {
                 Toggle("Always pack", isOn: $isAlwaysPacked)
                 Toggle("Optional", isOn: $isOptional)
 
-                ForEach(PackMatrixOptions.tripTypes, id: \.self) { tripType in
-                    Toggle(tripType, isOn: binding(for: tripType))
+                ForEach(TripType.allCases) { tripType in
+                    Toggle(tripType.displayName, isOn: binding(for: tripType))
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
@@ -66,7 +66,7 @@ struct AddItemView: View {
         categories.first { $0.id == selectedCategoryID }
     }
 
-    private func binding(for tripType: String) -> Binding<Bool> {
+    private func binding(for tripType: TripType) -> Binding<Bool> {
         Binding {
             selectedTripTypes.contains(tripType)
         } set: { isSelected in
@@ -86,7 +86,7 @@ struct AddItemView: View {
             quantity: quantity,
             notes: notes,
             isAlwaysPacked: isAlwaysPacked,
-            tripTypes: selectedTripTypes.sorted(),
+            tripTypes: TripType.allCases.filter { selectedTripTypes.contains($0) },
             destinations: destinationsText.commaSeparatedValues,
             isOptional: isOptional
         )

@@ -1,6 +1,62 @@
 import Foundation
 import SwiftData
 
+enum TripType: String, CaseIterable, Codable, Identifiable {
+    case weekend
+    case international
+    case domestic
+    case beach
+    case work
+    case familyVisit
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .weekend:
+            "Weekend"
+        case .international:
+            "International"
+        case .domestic:
+            "Domestic"
+        case .beach:
+            "Beach"
+        case .work:
+            "Work"
+        case .familyVisit:
+            "Family Visit"
+        }
+    }
+
+    init(storedValue: String) {
+        let normalizedValue = storedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let tripType = TripType(rawValue: normalizedValue) {
+            self = tripType
+            return
+        }
+
+        switch normalizedValue.lowercased() {
+        case "weekend":
+            self = .weekend
+        case "international", "selected":
+            self = .international
+        case "domestic":
+            self = .domestic
+        case "beach":
+            self = .beach
+        case "business", "work":
+            self = .work
+        case "family visit", "familyvisit":
+            self = .familyVisit
+        case "hot weather", "hotweather", "cold weather", "coldweather", "camping", "wedding":
+            self = .domestic
+        default:
+            self = .weekend
+        }
+    }
+}
+
 @Model
 final class PackingCategory {
     var id: UUID
@@ -30,6 +86,14 @@ final class PackingItem {
     var isOptional: Bool
 
     var category: PackingCategory?
+    var selectedTripTypes: [TripType] {
+        get {
+            tripTypes.map(TripType.init(storedValue:))
+        }
+        set {
+            tripTypes = newValue.map(\.rawValue)
+        }
+    }
 
     init(
         id: UUID = UUID(),
@@ -38,7 +102,7 @@ final class PackingItem {
         quantity: Int = 1,
         notes: String = "",
         isAlwaysPacked: Bool = false,
-        tripTypes: [String] = [],
+        tripTypes: [TripType] = [],
         destinations: [String] = [],
         isOptional: Bool = false
     ) {
@@ -48,7 +112,7 @@ final class PackingItem {
         self.quantity = max(1, quantity)
         self.notes = notes
         self.isAlwaysPacked = isAlwaysPacked
-        self.tripTypes = tripTypes
+        self.tripTypes = tripTypes.map(\.rawValue)
         self.destinations = destinations
         self.isOptional = isOptional
     }
@@ -62,6 +126,14 @@ final class Trip {
     var startDate: Date
     var endDate: Date
     var tripType: String
+    var selectedTripType: TripType {
+        get {
+            TripType(storedValue: tripType)
+        }
+        set {
+            tripType = newValue.rawValue
+        }
+    }
 
     @Relationship(deleteRule: .cascade, inverse: \TripPackingItem.trip)
     var checklistItems: [TripPackingItem]
@@ -72,14 +144,14 @@ final class Trip {
         destination: String,
         startDate: Date,
         endDate: Date,
-        tripType: String
+        tripType: TripType
     ) {
         self.id = id
         self.name = name
         self.destination = destination
         self.startDate = startDate
         self.endDate = endDate
-        self.tripType = tripType
+        self.tripType = tripType.rawValue
         self.checklistItems = []
     }
 }
@@ -112,16 +184,4 @@ final class TripPackingItem {
         self.notes = notes
         self.wasManuallyAdded = wasManuallyAdded
     }
-}
-
-enum PackMatrixOptions {
-    static let tripTypes = [
-        "Weekend",
-        "Business",
-        "International",
-        "Beach",
-        "Hot Weather",
-        "Camping",
-        "Selected"
-    ]
 }

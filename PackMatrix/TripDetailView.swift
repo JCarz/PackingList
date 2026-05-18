@@ -18,7 +18,7 @@ struct TripDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(trip.destination)
                         .font(.headline)
-                    Text("\(trip.tripType) • \(trip.startDate.formatted(date: .abbreviated, time: .omitted)) - \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
+                    Text("\(trip.selectedTripType.displayName) • \(trip.startDate.formatted(date: .abbreviated, time: .omitted)) - \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
                         .foregroundStyle(.secondary)
                     ProgressView(value: Double(packedCount), total: Double(max(trip.checklistItems.count, 1))) {
                         Text("\(packedCount) of \(trip.checklistItems.count) packed")
@@ -86,7 +86,7 @@ struct TripDetailView: View {
     }
 
     private func regenerateChecklist() {
-        PackingRuleEngine.generateChecklist(for: trip, from: allPackingItems, in: modelContext)
+        PackingListGenerator.generateChecklist(for: trip, from: allPackingItems, in: modelContext)
         try? modelContext.save()
     }
 }
@@ -151,14 +151,14 @@ private struct AddTripItemsView: View {
                 Section(category.name) {
                     ForEach(items) { item in
                         Button {
-                            PackingRuleEngine.manuallyAdd(item, to: trip, in: modelContext)
+                            PackingListGenerator.manuallyAdd(item, to: trip, in: modelContext)
                             addedItemIDs.insert(item.id)
                             try? modelContext.save()
                         } label: {
                             HStack {
                                 VStack(alignment: .leading) {
                                     Text(item.name)
-                                    Text(item.isAlwaysPacked ? "Always packed" : item.tripTypes.displayText)
+                                    Text(item.isAlwaysPacked ? "Always packed" : item.selectedTripTypes.displayText)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

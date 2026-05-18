@@ -11,7 +11,7 @@ struct CreateTripView: View {
     @State private var destination = ""
     @State private var startDate = Date()
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
-    @State private var tripType = PackMatrixOptions.tripTypes.first ?? "Weekend"
+    @State private var tripType = TripType.weekend
     @State private var sourceTripID: UUID?
 
     var body: some View {
@@ -21,8 +21,8 @@ struct CreateTripView: View {
                 TextField("Destination", text: $destination)
 
                 Picker("Trip Type", selection: $tripType) {
-                    ForEach(PackMatrixOptions.tripTypes, id: \.self) { tripType in
-                        Text(tripType).tag(tripType)
+                    ForEach(TripType.allCases) { tripType in
+                        Text(tripType.displayName).tag(tripType)
                     }
                 }
             }
@@ -70,9 +70,9 @@ struct CreateTripView: View {
         modelContext.insert(trip)
 
         if let sourceTrip {
-            PackingRuleEngine.duplicateChecklist(from: sourceTrip, to: trip, in: modelContext)
+            PackingListGenerator.duplicateChecklist(from: sourceTrip, to: trip, in: modelContext)
         } else {
-            PackingRuleEngine.generateChecklist(for: trip, from: packingItems, in: modelContext)
+            PackingListGenerator.generateChecklist(for: trip, from: packingItems, in: modelContext)
         }
 
         try? modelContext.save()

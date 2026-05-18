@@ -14,7 +14,7 @@ struct TripListView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(trip.name)
                             .font(.headline)
-                        Text("\(trip.destination) • \(trip.tripType)")
+                        Text("\(trip.destination) • \(trip.selectedTripType.displayName)")
                             .foregroundStyle(.secondary)
                         Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) - \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
                             .font(.caption)

@@ -28,8 +28,8 @@ struct ItemDetailView: View {
                 Toggle("Always pack", isOn: $item.isAlwaysPacked)
                 Toggle("Optional", isOn: $item.isOptional)
 
-                ForEach(PackMatrixOptions.tripTypes, id: \.self) { tripType in
-                    Toggle(tripType, isOn: binding(for: tripType))
+                ForEach(TripType.allCases) { tripType in
+                    Toggle(tripType.displayName, isOn: binding(for: tripType))
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
@@ -57,16 +57,19 @@ struct ItemDetailView: View {
         }
     }
 
-    private func binding(for tripType: String) -> Binding<Bool> {
+    private func binding(for tripType: TripType) -> Binding<Bool> {
         Binding {
-            item.tripTypes.contains(tripType)
+            item.selectedTripTypes.contains(tripType)
         } set: { isSelected in
-            if isSelected, !item.tripTypes.contains(tripType) {
-                item.tripTypes.append(tripType)
-                item.tripTypes.sort()
+            var selectedTripTypes = Set(item.selectedTripTypes)
+
+            if isSelected {
+                selectedTripTypes.insert(tripType)
             } else if !isSelected {
-                item.tripTypes.removeAll { $0 == tripType }
+                selectedTripTypes.remove(tripType)
             }
+
+            item.selectedTripTypes = TripType.allCases.filter { selectedTripTypes.contains($0) }
         }
     }
 
