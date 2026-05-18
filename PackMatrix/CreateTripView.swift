@@ -17,7 +17,6 @@ struct CreateTripView: View {
             Section("Trip") {
                 TextField("Name", text: $name)
                 TextField("Destination", text: $destination)
-                    .textInputAutocapitalization(.words)
 
                 Picker("Trip Type", selection: $tripType) {
                     ForEach(PackMatrixOptions.tripTypes, id: \.self) { tripType in

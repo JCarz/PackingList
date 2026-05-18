@@ -33,7 +33,6 @@ struct ItemDetailView: View {
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
-                    .textInputAutocapitalization(.words)
                     .onSubmit(updateDestinations)
             }
         }

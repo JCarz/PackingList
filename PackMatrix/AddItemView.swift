@@ -40,7 +40,6 @@ struct AddItemView: View {
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
-                    .textInputAutocapitalization(.words)
             }
         }
         .navigationTitle("Add Item")

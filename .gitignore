@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Xcode user-local state
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+PackMatrix.xcodeproj/project.xcworkspace/
+
+# Xcode build output
+DerivedData/
+build/
+
+# Swift Package Manager build output
+.build/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace/
