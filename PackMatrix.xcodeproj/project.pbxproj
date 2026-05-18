@@ -20,6 +20,7 @@
 		1A000001000000000000000B /* CreateTripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000001000000000000001B /* CreateTripView.swift */; };
 		1A000001000000000000000C /* TripDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000001000000000000001C /* TripDetailView.swift */; };
 		1A000001000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A000001000000000000001D /* Assets.xcassets */; };
+		1A000001000000000000000E /* QuickAddItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000001000000000000001E /* QuickAddItemsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		1A000001000000000000001B /* CreateTripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateTripView.swift; sourceTree = "<group>"; };
 		1A000001000000000000001C /* TripDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripDetailView.swift; sourceTree = "<group>"; };
 		1A000001000000000000001D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1A000001000000000000001E /* QuickAddItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddItemsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +75,7 @@
 				1A000001000000000000001A /* TripListView.swift */,
 				1A000001000000000000001B /* CreateTripView.swift */,
 				1A000001000000000000001C /* TripDetailView.swift */,
+				1A000001000000000000001E /* QuickAddItemsView.swift */,
 				1A000001000000000000001D /* Assets.xcassets */,
 			);
 			path = PackMatrix;
@@ -167,6 +170,7 @@
 				1A000001000000000000000A /* TripListView.swift in Sources */,
 				1A000001000000000000000B /* CreateTripView.swift in Sources */,
 				1A000001000000000000000C /* TripDetailView.swift in Sources */,
+				1A000001000000000000000E /* QuickAddItemsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -307,6 +311,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.PackMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -342,6 +347,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.PackMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";

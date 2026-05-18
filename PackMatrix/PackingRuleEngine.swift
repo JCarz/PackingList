@@ -19,8 +19,10 @@ enum PackingRuleEngine {
     }
 
     static func generateChecklist(for trip: Trip, from items: [PackingItem], in context: ModelContext) {
+        var addedPackingItemIDs = Set(trip.checklistItems.compactMap { $0.packingItem?.id })
+
         for item in items where matches(item: item, trip: trip) {
-            guard !trip.checklistItems.contains(where: { $0.packingItem?.id == item.id }) else {
+            guard !addedPackingItemIDs.contains(item.id) else {
                 continue
             }
 
@@ -32,6 +34,7 @@ enum PackingRuleEngine {
             )
             context.insert(checklistItem)
             trip.checklistItems.append(checklistItem)
+            addedPackingItemIDs.insert(item.id)
         }
     }
 

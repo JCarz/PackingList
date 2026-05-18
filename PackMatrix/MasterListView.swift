@@ -4,6 +4,7 @@ import SwiftData
 struct MasterListView: View {
     @Query(sort: \PackingItem.name) private var items: [PackingItem]
     @State private var showingAddItem = false
+    @State private var showingQuickAdd = false
 
     var body: some View {
         List {
@@ -21,15 +22,30 @@ struct MasterListView: View {
         }
         .navigationTitle("Master List")
         .toolbar {
-            Button {
-                showingAddItem = true
+            Menu {
+                Button {
+                    showingAddItem = true
+                } label: {
+                    Label("Add Item", systemImage: "plus")
+                }
+
+                Button {
+                    showingQuickAdd = true
+                } label: {
+                    Label("Quick Add", systemImage: "text.badge.plus")
+                }
             } label: {
-                Label("Add Item", systemImage: "plus")
+                Label("Add", systemImage: "plus")
             }
         }
         .sheet(isPresented: $showingAddItem) {
             NavigationStack {
                 AddItemView()
+            }
+        }
+        .sheet(isPresented: $showingQuickAdd) {
+            NavigationStack {
+                QuickAddItemsView()
             }
         }
         .overlay {
