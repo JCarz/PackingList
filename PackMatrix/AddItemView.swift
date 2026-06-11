@@ -17,22 +17,22 @@ struct AddItemView: View {
 
     var body: some View {
         Form {
-            Section("Item") {
-                TextField("Name", text: $name)
+            Section("Item Details") {
+                TextField("Item Name", text: $name)
 
-                Picker("Category", selection: $selectedCategoryID) {
-                    Text("Choose").tag(nil as UUID?)
+                Picker("Category (Required)", selection: $selectedCategoryID) {
+                    Text("Select Category").tag(nil as UUID?)
                     ForEach(categories) { category in
                         Text(category.name).tag(category.id as UUID?)
                     }
                 }
 
                 Stepper("Quantity: \(quantity)", value: $quantity, in: 1...99)
+                Toggle("Always Pack", isOn: $isAlwaysPacked)
                 TextField("Notes", text: $notes, axis: .vertical)
             }
 
             Section("Rules") {
-                Toggle("Always pack", isOn: $isAlwaysPacked)
                 Toggle("Optional", isOn: $isOptional)
 
                 ForEach(TripType.allCases) { tripType in
@@ -80,6 +80,10 @@ struct AddItemView: View {
 
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let selectedCategory else {
+            return
+        }
+
         let item = PackingItem(
             name: trimmedName,
             category: selectedCategory,
@@ -92,7 +96,7 @@ struct AddItemView: View {
         )
 
         modelContext.insert(item)
-        selectedCategory?.items.append(item)
+        selectedCategory.items.append(item)
         try? modelContext.save()
         dismiss()
     }

@@ -9,7 +9,7 @@ enum SampleData {
         }
 
         let categoryNames = [
-            "Fucked Without It"
+            "Fucked Without It",
             "Bedroom",
             "Bathroom",
             "Clothing",

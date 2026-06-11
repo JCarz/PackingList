@@ -7,11 +7,7 @@ enum PackingListGenerator {
             return true
         }
 
-        if item.selectedTripTypes.contains(trip.selectedTripType) {
-            return true
-        }
-
-        if containsMatch(item.destinations, trip.destination) {
+        if item.tripTypes.contains(trip.tripType) {
             return true
         }
 
@@ -80,18 +76,4 @@ enum PackingListGenerator {
         }
     }
 
-    private static func containsMatch(_ values: [String], _ candidate: String) -> Bool {
-        let normalizedCandidate = normalize(candidate)
-
-        return values.contains { value in
-            let normalizedValue = normalize(value)
-            return normalizedCandidate == normalizedValue
-                || normalizedCandidate.contains(normalizedValue)
-                || normalizedValue.contains(normalizedCandidate)
-        }
-    }
-
-    private static func normalize(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    }
 }

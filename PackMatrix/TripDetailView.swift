@@ -7,9 +7,14 @@ struct TripDetailView: View {
 
     @Bindable var trip: Trip
     @State private var showingAddItems = false
+    @State private var hidePackedItems = false
 
     private var packedCount: Int {
         trip.checklistItems.filter(\.isPacked).count
+    }
+
+    private var groupedChecklistItems: [(PackingCategory, [TripPackingItem])] {
+        ListGrouping.checklistByCategory(from: trip.checklistItems)
     }
 
     var body: some View {
@@ -23,17 +28,30 @@ struct TripDetailView: View {
                     ProgressView(value: Double(packedCount), total: Double(max(trip.checklistItems.count, 1))) {
                         Text("\(packedCount) of \(trip.checklistItems.count) packed")
                     }
+
+                    Toggle("Hide packed items", isOn: $hidePackedItems)
                 }
                 .padding(.vertical, 4)
             }
 
-            ForEach(ListGrouping.checklistByCategory(from: trip.checklistItems), id: \.0.id) { category, checklistItems in
-                Section(category.name) {
-                    ForEach(checklistItems) { checklistItem in
-                        ChecklistRow(checklistItem: checklistItem)
-                    }
-                    .onDelete { offsets in
-                        removeItems(at: offsets, from: checklistItems)
+            ForEach(groupedChecklistItems, id: \.0.id) { category, checklistItems in
+                let visibleItems = hidePackedItems ? checklistItems.filter { !$0.isPacked } : checklistItems
+
+                if !visibleItems.isEmpty {
+                    Section {
+                        ForEach(visibleItems) { checklistItem in
+                            ChecklistRow(checklistItem: checklistItem)
+                        }
+                        .onDelete { offsets in
+                            removeItems(at: offsets, from: visibleItems)
+                        }
+                    } header: {
+                        HStack {
+                            Text(category.name)
+                            Spacer()
+                            Text("\(checklistItems.filter(\.isPacked).count) / \(checklistItems.count)")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
