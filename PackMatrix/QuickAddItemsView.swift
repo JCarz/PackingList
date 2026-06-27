@@ -9,6 +9,8 @@ struct QuickAddItemsView: View {
     @State private var selectedCategoryID: UUID?
     @State private var itemNames = ""
 
+    var onQuickAddCompleted: (Int) -> Void = { _ in }
+
     var body: some View {
         Form {
             Section("Category") {
@@ -51,7 +53,9 @@ struct QuickAddItemsView: View {
 
     private var parsedItemNames: [String] {
         itemNames
-            .split(whereSeparator: \.isNewline)
+            .split { character in
+                character.isNewline || character == ","
+            }
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
     }
@@ -61,13 +65,31 @@ struct QuickAddItemsView: View {
             return
         }
 
+        var addedCount = 0
+        var existingNames = Set(selectedCategory.items.map { $0.name.normalizedItemName })
         for name in parsedItemNames {
+            let normalizedName = name.normalizedItemName
+            guard !existingNames.contains(normalizedName) else {
+                continue
+            }
+
             let item = PackingItem(name: name, category: selectedCategory)
             modelContext.insert(item)
             selectedCategory.items.append(item)
+            existingNames.insert(normalizedName)
+            addedCount += 1
         }
 
         try? modelContext.save()
         dismiss()
+        if addedCount > 0 {
+            onQuickAddCompleted(addedCount)
+        }
+    }
+}
+
+private extension String {
+    var normalizedItemName: String {
+        trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 }

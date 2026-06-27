@@ -20,24 +20,33 @@ enum SampleData {
         ]
 
         var categories = existingCategories
+        var categoryNamesByNormalizedName: [String: PackingCategory] = [:]
+        for category in categories {
+            categoryNamesByNormalizedName[category.name.normalizedSeedName] = categoryNamesByNormalizedName[category.name.normalizedSeedName] ?? category
+        }
 
         for (sortOrder, name) in categoryNames.enumerated() {
-            if let category = categories.first(where: { $0.name == name }) {
+            let normalizedName = name.normalizedSeedName
+
+            if let category = categoryNamesByNormalizedName[normalizedName] {
                 category.sortOrder = sortOrder
             } else {
                 let category = PackingCategory(name: name, sortOrder: sortOrder)
                 context.insert(category)
                 categories.append(category)
+                categoryNamesByNormalizedName[normalizedName] = category
             }
         }
 
-        add("Toothbrush", to: "Bathroom", categories: categories, existingItems: existingItems, context: context, always: true)
-        add("Underwear", to: "Clothing", categories: categories, existingItems: existingItems, context: context, always: true)
-        add("Phone charger", to: "Electronics", categories: categories, existingItems: existingItems, context: context, always: true)
-        add("Contact lenses", to: "Bathroom", categories: categories, existingItems: existingItems, context: context, tripTypes: [.international])
-        add("Passport", to: "Documents", categories: categories, existingItems: existingItems, context: context, tripTypes: [.international])
-        add("Sunscreen", to: "Bathroom", categories: categories, existingItems: existingItems, context: context, tripTypes: [.beach], destinations: ["Beach", "Hot Weather"])
-        add("Pajamas", to: "Bedroom", categories: categories, existingItems: existingItems, context: context, always: true)
+        var existingItemNames = Set(existingItems.map { $0.name.normalizedSeedName })
+
+        add("Toothbrush", to: "Bathroom", categories: categories, existingItemNames: &existingItemNames, context: context, always: true)
+        add("Underwear", to: "Clothing", categories: categories, existingItemNames: &existingItemNames, context: context, always: true)
+        add("Phone charger", to: "Electronics", categories: categories, existingItemNames: &existingItemNames, context: context, always: true)
+        add("Contact lenses", to: "Bathroom", categories: categories, existingItemNames: &existingItemNames, context: context, tripTypes: [.international])
+        add("Passport", to: "Documents", categories: categories, existingItemNames: &existingItemNames, context: context, tripTypes: [.international])
+        add("Sunscreen", to: "Bathroom", categories: categories, existingItemNames: &existingItemNames, context: context, tripTypes: [.beach], destinations: ["Beach", "Hot Weather"])
+        add("Pajamas", to: "Bedroom", categories: categories, existingItemNames: &existingItemNames, context: context, always: true)
 
         try? context.save()
     }
@@ -46,17 +55,18 @@ enum SampleData {
         _ name: String,
         to categoryName: String,
         categories: [PackingCategory],
-        existingItems: [PackingItem],
+        existingItemNames: inout Set<String>,
         context: ModelContext,
         always: Bool = false,
         tripTypes: [TripType] = [],
         destinations: [String] = []
     ) {
-        guard let category = categories.first(where: { $0.name == categoryName }) else {
+        guard let category = categories.first(where: { $0.name.normalizedSeedName == categoryName.normalizedSeedName }) else {
             return
         }
 
-        guard !existingItems.contains(where: { $0.name == name }) else {
+        let normalizedName = name.normalizedSeedName
+        guard !existingItemNames.contains(normalizedName) else {
             return
         }
 
@@ -69,5 +79,12 @@ enum SampleData {
         )
         context.insert(item)
         category.items.append(item)
+        existingItemNames.insert(normalizedName)
+    }
+}
+
+private extension String {
+    var normalizedSeedName: String {
+        trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 }

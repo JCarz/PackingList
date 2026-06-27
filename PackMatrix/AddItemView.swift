@@ -15,6 +15,8 @@ struct AddItemView: View {
     @State private var selectedTripTypes: Set<TripType> = []
     @State private var destinationsText = ""
 
+    var onItemAdded: () -> Void = { }
+
     var body: some View {
         Form {
             Section("Item Details") {
@@ -99,5 +101,6 @@ struct AddItemView: View {
         selectedCategory.items.append(item)
         try? modelContext.save()
         dismiss()
+        onItemAdded()
     }
 }

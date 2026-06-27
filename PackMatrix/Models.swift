@@ -126,6 +126,7 @@ final class Trip {
     var startDate: Date
     var endDate: Date
     var tripType: String
+    var isArchived: Bool = false
     var selectedTripType: TripType {
         get {
             TripType(storedValue: tripType)
@@ -144,7 +145,8 @@ final class Trip {
         destination: String,
         startDate: Date,
         endDate: Date,
-        tripType: TripType
+        tripType: TripType,
+        isArchived: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -152,6 +154,7 @@ final class Trip {
         self.startDate = startDate
         self.endDate = endDate
         self.tripType = tripType.rawValue
+        self.isArchived = isArchived
         self.checklistItems = []
     }
 }
@@ -183,5 +186,46 @@ final class TripPackingItem {
         self.quantity = max(1, quantity)
         self.notes = notes
         self.wasManuallyAdded = wasManuallyAdded
+    }
+}
+
+@Model
+final class PackingTemplate {
+    var id: UUID
+    var name: String
+    var createdAt: Date
+
+    @Relationship(deleteRule: .cascade, inverse: \PackingTemplateItem.template)
+    var items: [PackingTemplateItem]
+
+    init(id: UUID = UUID(), name: String, createdAt: Date = Date()) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.items = []
+    }
+}
+
+@Model
+final class PackingTemplateItem {
+    var id: UUID
+    var quantity: Int
+    var notes: String
+
+    var template: PackingTemplate?
+    var packingItem: PackingItem?
+
+    init(
+        id: UUID = UUID(),
+        template: PackingTemplate? = nil,
+        packingItem: PackingItem? = nil,
+        quantity: Int = 1,
+        notes: String = ""
+    ) {
+        self.id = id
+        self.template = template
+        self.packingItem = packingItem
+        self.quantity = max(1, quantity)
+        self.notes = notes
     }
 }

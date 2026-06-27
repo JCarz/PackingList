@@ -8,13 +8,16 @@ struct ItemDetailView: View {
     @Bindable var item: PackingItem
     @State private var destinationsText = ""
     @State private var selectedCategoryID: UUID?
+    @State private var originalName = ""
+    @State private var toastMessage: String?
 
     var body: some View {
         Form {
             Section("Item") {
                 TextField("Name", text: $item.name)
 
-                Picker("Category", selection: $selectedCategoryID) {
+                Picker("Category (Required)", selection: $selectedCategoryID) {
+                    Text("Select Category").tag(nil as UUID?)
                     ForEach(categories) { category in
                         Text(category.name).tag(category.id as UUID?)
                     }
@@ -22,6 +25,18 @@ struct ItemDetailView: View {
 
                 Stepper("Quantity: \(item.quantity)", value: $item.quantity, in: 1...99)
                 TextField("Notes", text: $item.notes, axis: .vertical)
+
+                if item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Item name is required.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                if selectedCategory == nil {
+                    Text("Category is required.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
 
             Section("Rules") {
@@ -40,21 +55,29 @@ struct ItemDetailView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    updateName()
                     updateCategory()
                     updateDestinations()
                     try? modelContext.save()
+                    toastMessage = "Changes saved"
                 }
+                .disabled(!canSave)
             }
         }
         .onAppear {
+            originalName = item.name
             destinationsText = item.destinations.joined(separator: ", ")
             selectedCategoryID = item.category?.id ?? categories.first?.id
         }
         .onDisappear {
-            updateCategory()
+            updateName()
+            if selectedCategory != nil {
+                updateCategory()
+            }
             updateDestinations()
             try? modelContext.save()
         }
+        .toast(message: $toastMessage)
     }
 
     private func binding(for tripType: TripType) -> Binding<Bool> {
@@ -77,7 +100,24 @@ struct ItemDetailView: View {
         item.destinations = destinationsText.commaSeparatedValues
     }
 
+    private func updateName() {
+        let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedName.isEmpty {
+            item.name = originalName.isEmpty ? "Untitled Item" : originalName
+        } else {
+            item.name = trimmedName
+        }
+    }
+
     private func updateCategory() {
-        item.category = categories.first { $0.id == selectedCategoryID }
+        item.category = selectedCategory
+    }
+
+    private var selectedCategory: PackingCategory? {
+        categories.first { $0.id == selectedCategoryID }
+    }
+
+    private var canSave: Bool {
+        !item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
     }
 }

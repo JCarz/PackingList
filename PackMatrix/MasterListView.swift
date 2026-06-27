@@ -5,6 +5,7 @@ struct MasterListView: View {
     @Query(sort: \PackingItem.name) private var items: [PackingItem]
     @State private var showingAddItem = false
     @State private var showingQuickAdd = false
+    @State private var toastMessage: String?
 
     var body: some View {
         List {
@@ -22,7 +23,7 @@ struct MasterListView: View {
         }
         .navigationTitle("Master List")
         .toolbar {
-            Menu {
+            ToolbarItemGroup {
                 Button {
                     showingAddItem = true
                 } label: {
@@ -34,29 +35,37 @@ struct MasterListView: View {
                 } label: {
                     Label("Quick Add", systemImage: "text.badge.plus")
                 }
-            } label: {
-                Label("Add", systemImage: "plus")
             }
         }
         .sheet(isPresented: $showingAddItem) {
             NavigationStack {
-                AddItemView()
+                AddItemView {
+                    toastMessage = "Item added"
+                }
             }
         }
         .sheet(isPresented: $showingQuickAdd) {
             NavigationStack {
-                QuickAddItemsView()
+                QuickAddItemsView { addedCount in
+                    toastMessage = "Added \(addedCount) items"
+                }
             }
         }
         .overlay {
             if items.isEmpty {
-                ContentUnavailableView(
-                    "No Packing Items",
-                    systemImage: "suitcase.cart",
-                    description: Text("Add items to build your reusable master packing list.")
-                )
+                ContentUnavailableView {
+                    Label("No packing items yet", systemImage: "suitcase.cart")
+                } description: {
+                    Text("Add items to build your reusable master packing list.")
+                } actions: {
+                    Button("Add Item") {
+                        showingAddItem = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }
         }
+        .toast(message: $toastMessage)
     }
 }
 

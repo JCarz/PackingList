@@ -11,7 +11,9 @@ struct PackMatrixApp: App {
             PackingCategory.self,
             PackingItem.self,
             Trip.self,
-            TripPackingItem.self
+            TripPackingItem.self,
+            PackingTemplate.self,
+            PackingTemplateItem.self
         ])
     }
 }

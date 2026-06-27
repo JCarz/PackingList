@@ -4,6 +4,8 @@ import SwiftData
 enum SidebarSection: String, CaseIterable, Identifiable {
     case masterList = "Master List"
     case trips = "Trips"
+    case statistics = "Statistics"
+    case debug = "Debug"
 
     var id: String { rawValue }
 
@@ -13,6 +15,10 @@ enum SidebarSection: String, CaseIterable, Identifiable {
             "square.grid.2x2"
         case .trips:
             "suitcase"
+        case .statistics:
+            "chart.bar"
+        case .debug:
+            "gearshape"
         }
     }
 }
@@ -50,6 +56,20 @@ struct ContentView: View {
             .tabItem {
                 Label("Trips", systemImage: "suitcase")
             }
+
+            NavigationStack {
+                StatisticsView()
+            }
+            .tabItem {
+                Label("Stats", systemImage: "chart.bar")
+            }
+
+            NavigationStack {
+                DebugView()
+            }
+            .tabItem {
+                Label("Debug", systemImage: "gearshape")
+            }
         }
     }
 
@@ -67,6 +87,10 @@ struct ContentView: View {
                     MasterListView()
                 case .trips:
                     TripListView()
+                case .statistics:
+                    StatisticsView()
+                case .debug:
+                    DebugView()
                 }
             }
         }
@@ -79,6 +103,8 @@ struct ContentView: View {
             PackingCategory.self,
             PackingItem.self,
             Trip.self,
-            TripPackingItem.self
+            TripPackingItem.self,
+            PackingTemplate.self,
+            PackingTemplateItem.self
         ], inMemory: true)
 }
