@@ -5,6 +5,7 @@ struct CreateTripView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PackingItem.name) private var packingItems: [PackingItem]
+    @Query(sort: \PackingCategory.sortOrder) private var categories: [PackingCategory]
     @Query(sort: \Trip.startDate, order: .reverse) private var previousTrips: [Trip]
     @Query(sort: \PackingTemplate.name) private var templates: [PackingTemplate]
 
@@ -15,9 +16,13 @@ struct CreateTripView: View {
     @State private var tripType = TripType.weekend
     @State private var startingPoint = TripStartingPoint.rules
     @State private var isSaving = false
+    @State private var isRecentlyPackedExpanded = false
+    @State private var showingQuickAddExtraItems = false
     @State private var showingDuplicateWarning = false
     @State private var statusMessage: String?
     @State private var errorMessage: String?
+    @State private var toastMessage: String?
+    @State private var extraItems: [TripExtraItem] = []
 
     var onTripCreated: (Trip) -> Void = { _ in }
 
@@ -41,8 +46,23 @@ struct CreateTripView: View {
             }
 
             Section("Dates") {
-                DatePicker("Start", selection: $startDate, displayedComponents: .date)
-                DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: .date)
+                VStack(alignment: .leading, spacing: 6) {
+                    DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+
+                    Text("Selected: \(formattedDate(startDate))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    DatePicker("End Date", selection: $endDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+
+                    Text("Selected: \(formattedDate(endDate))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 if endDate < startDate {
                     Text("End date cannot be before start date.")
@@ -73,43 +93,56 @@ struct CreateTripView: View {
                 }
             }
 
-            if !recentlyPackedItems.isEmpty {
-                Section("Recently Packed") {
-                    ForEach(recentlyPackedItems) { suggestion in
+            Section("Extra Items") {
+                if extraItems.isEmpty {
+                    Text("No extra items added.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(extraItems) { item in
                         HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(suggestion.item.name)
-
-                                if let categoryName = suggestion.item.category?.name {
-                                    Text(categoryName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
+                            Text(item.name)
 
                             Spacer()
 
-                            Text("\(suggestion.useCount)")
+                            Text(categoryName(for: item.categoryID))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .onDelete(perform: removeExtraItems)
+                }
+
+                Button {
+                    showingQuickAddExtraItems = true
+                } label: {
+                    Label("Quick Add", systemImage: "plus")
                 }
             }
 
-            Section {
-                Button {
-                    startTripCreation()
-                } label: {
-                    if isSaving {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("Generate Packing List")
-                            .frame(maxWidth: .infinity)
+            if !recentlyPackedItems.isEmpty {
+                Section {
+                    DisclosureGroup("Recently Packed", isExpanded: $isRecentlyPackedExpanded) {
+                        ForEach(recentlyPackedItems) { suggestion in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(suggestion.item.name)
+
+                                    if let categoryName = suggestion.item.category?.name {
+                                        Text(categoryName)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+
+                                Spacer()
+
+                                Text("\(suggestion.useCount)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
-                .disabled(!canCreateTrip || isSaving)
             }
 
             if let statusMessage {
@@ -127,11 +160,32 @@ struct CreateTripView: View {
             }
         }
         .navigationTitle("Create Trip")
+        .sheet(isPresented: $showingQuickAddExtraItems) {
+            NavigationStack {
+                TripExtraItemsQuickAddView(existingExtraItems: extraItems) { addedItems, skippedCount in
+                    extraItems.append(contentsOf: addedItems)
+                    showToast(QuickAddFeedback.message(addedCount: addedItems.count, skippedDuplicateCount: skippedCount))
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
                     dismiss()
                 }
+            }
+
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    startTripCreation()
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Text("Save")
+                    }
+                }
+                .disabled(!canCreateTrip || isSaving)
             }
         }
         .confirmationDialog("Possible Duplicate Trip", isPresented: $showingDuplicateWarning) {
@@ -143,6 +197,7 @@ struct CreateTripView: View {
         } message: {
             Text("A trip with the same name, destination, start date, and end date already exists.")
         }
+        .toast(message: $toastMessage)
     }
 
     private func startTripCreation() {
@@ -186,10 +241,12 @@ struct CreateTripView: View {
         } else {
             PackingListGenerator.generateChecklist(for: trip, from: packingItems, in: modelContext)
         }
+        addExtraItems(to: trip)
 
         do {
             try modelContext.save()
             statusMessage = "Trip created."
+            toastMessage = "Trip created"
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 dismiss()
@@ -199,6 +256,40 @@ struct CreateTripView: View {
             modelContext.delete(trip)
             errorMessage = "Could not create trip. Please try again."
             isSaving = false
+        }
+    }
+
+    private func addExtraItems(to trip: Trip) {
+        var knownItemsByName: [String: PackingItem] = [:]
+        for item in packingItems {
+            knownItemsByName[item.name.normalizedPackingItemName] = item
+        }
+
+        var handledExtraNames: Set<String> = []
+
+        for extraItem in extraItems {
+            let trimmedName = extraItem.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedName = trimmedName.normalizedPackingItemName
+
+            guard !trimmedName.isEmpty, !handledExtraNames.contains(normalizedName) else {
+                continue
+            }
+
+            let packingItem: PackingItem
+            if let existingItem = knownItemsByName[normalizedName] {
+                packingItem = existingItem
+            } else if let category = categories.first(where: { $0.id == extraItem.categoryID }) {
+                let newItem = PackingItem(name: trimmedName, category: category)
+                modelContext.insert(newItem)
+                category.items.append(newItem)
+                knownItemsByName[normalizedName] = newItem
+                packingItem = newItem
+            } else {
+                continue
+            }
+
+            PackingListGenerator.manuallyAdd(packingItem, to: trip, in: modelContext)
+            handledExtraNames.insert(normalizedName)
         }
     }
 
@@ -265,6 +356,26 @@ struct CreateTripView: View {
             Calendar.current.isDate(trip.endDate, inSameDayAs: endDate)
         }
     }
+
+    private func formattedDate(_ date: Date) -> String {
+        date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+
+    private func categoryName(for categoryID: UUID) -> String {
+        categories.first { $0.id == categoryID }?.name ?? "Category"
+    }
+
+    private func removeExtraItems(at offsets: IndexSet) {
+        extraItems.remove(atOffsets: offsets)
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = nil
+
+        DispatchQueue.main.async {
+            toastMessage = message
+        }
+    }
 }
 
 private enum TripStartingPoint: Hashable {
@@ -279,5 +390,96 @@ private struct RecentlyPackedItem: Identifiable {
 
     var id: UUID {
         item.id
+    }
+}
+
+private struct TripExtraItem: Identifiable {
+    let id = UUID()
+    let name: String
+    let categoryID: UUID
+}
+
+private struct TripExtraItemsQuickAddView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \PackingCategory.sortOrder) private var categories: [PackingCategory]
+
+    let existingExtraItems: [TripExtraItem]
+    var onAdd: ([TripExtraItem], Int) -> Void
+
+    @State private var selectedCategoryID: UUID?
+    @State private var itemNames = ""
+
+    var body: some View {
+        Form {
+            Section("Category") {
+                Picker("Category", selection: $selectedCategoryID) {
+                    Text("Select Category").tag(nil as UUID?)
+                    ForEach(categories) { category in
+                        Text(category.name).tag(category.id as UUID?)
+                    }
+                }
+            }
+
+            Section("Items") {
+                TextEditor(text: $itemNames)
+                    .frame(minHeight: 160)
+
+                Text("Use one item per line or separate items with commas.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("Quick Add")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Add") {
+                    addItems()
+                }
+                .disabled(selectedCategoryID == nil || parsedItemNames.isEmpty)
+            }
+        }
+        .onAppear {
+            selectedCategoryID = selectedCategoryID ?? categories.first?.id
+        }
+    }
+
+    private var parsedItemNames: [String] {
+        itemNames
+            .split { character in
+                character.isNewline || character == ","
+            }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func addItems() {
+        guard let selectedCategoryID else {
+            return
+        }
+
+        var seenNames = Set(existingExtraItems.map { $0.name.normalizedPackingItemName })
+        var addedItems: [TripExtraItem] = []
+        var skippedCount = 0
+
+        for name in parsedItemNames {
+            let normalizedName = name.normalizedPackingItemName
+
+            guard !seenNames.contains(normalizedName) else {
+                skippedCount += 1
+                continue
+            }
+
+            addedItems.append(TripExtraItem(name: name, categoryID: selectedCategoryID))
+            seenNames.insert(normalizedName)
+        }
+
+        onAdd(addedItems, skippedCount)
+        dismiss()
     }
 }

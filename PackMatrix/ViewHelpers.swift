@@ -42,6 +42,23 @@ enum ListGrouping {
     }
 }
 
+enum QuickAddFeedback {
+    static func message(addedCount: Int, skippedDuplicateCount: Int) -> String {
+        let itemWord = addedCount == 1 ? "item" : "items"
+        let duplicateWord = skippedDuplicateCount == 1 ? "duplicate" : "duplicates"
+
+        if addedCount > 0 && skippedDuplicateCount > 0 {
+            return "Added \(addedCount) \(itemWord), skipped \(skippedDuplicateCount) \(duplicateWord)"
+        }
+
+        if addedCount > 0 {
+            return "Added \(addedCount) \(itemWord)"
+        }
+
+        return "Skipped \(skippedDuplicateCount) \(duplicateWord)"
+    }
+}
+
 extension Array where Element == String {
     var displayText: String {
         isEmpty ? "Any" : joined(separator: ", ")
@@ -59,5 +76,9 @@ extension String {
         split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+    }
+
+    var normalizedPackingItemName: String {
+        trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
     }
 }

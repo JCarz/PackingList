@@ -72,13 +72,13 @@ struct TripListView: View {
         .navigationDestination(item: $createdTripToOpen) { trip in
             TripDetailView(trip: trip)
         }
-        .confirmationDialog("Delete Trip?", isPresented: $showingDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
-                deletePendingTrips()
-            }
-
+        .alert("Delete Trip?", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {
                 tripsPendingDeletion = []
+            }
+
+            Button("Delete", role: .destructive) {
+                deletePendingTrips()
             }
         } message: {
             Text("This will remove the trip and its checklist items.")

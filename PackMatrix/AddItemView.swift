@@ -5,6 +5,7 @@ struct AddItemView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PackingCategory.sortOrder) private var categories: [PackingCategory]
+    @Query(sort: \PackingItem.name) private var existingItems: [PackingItem]
 
     @State private var name = ""
     @State private var selectedCategoryID: UUID?
@@ -14,6 +15,7 @@ struct AddItemView: View {
     @State private var isOptional = false
     @State private var selectedTripTypes: Set<TripType> = []
     @State private var destinationsText = ""
+    @State private var errorMessage: String?
 
     var onItemAdded: () -> Void = { }
 
@@ -42,6 +44,13 @@ struct AddItemView: View {
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
+            }
+
+            if let errorMessage {
+                Section {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .navigationTitle("Add Item")
@@ -83,6 +92,12 @@ struct AddItemView: View {
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty, let selectedCategory else {
+            return
+        }
+
+        let existingNames = Set(existingItems.map { $0.name.normalizedPackingItemName })
+        guard !existingNames.contains(trimmedName.normalizedPackingItemName) else {
+            errorMessage = "An item with this name already exists."
             return
         }
 

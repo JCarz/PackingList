@@ -5,11 +5,12 @@ struct QuickAddItemsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PackingCategory.sortOrder) private var categories: [PackingCategory]
+    @Query(sort: \PackingItem.name) private var existingItems: [PackingItem]
 
     @State private var selectedCategoryID: UUID?
     @State private var itemNames = ""
 
-    var onQuickAddCompleted: (Int) -> Void = { _ in }
+    var onQuickAddCompleted: (Int, Int) -> Void = { _, _ in }
 
     var body: some View {
         Form {
@@ -66,14 +67,17 @@ struct QuickAddItemsView: View {
         }
 
         var addedCount = 0
-        var existingNames = Set(selectedCategory.items.map { $0.name.normalizedItemName })
+        var skippedDuplicateCount = 0
+        var existingNames = Set(existingItems.map { $0.name.normalizedPackingItemName })
         for name in parsedItemNames {
-            let normalizedName = name.normalizedItemName
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedName = trimmedName.normalizedPackingItemName
             guard !existingNames.contains(normalizedName) else {
+                skippedDuplicateCount += 1
                 continue
             }
 
-            let item = PackingItem(name: name, category: selectedCategory)
+            let item = PackingItem(name: trimmedName, category: selectedCategory)
             modelContext.insert(item)
             selectedCategory.items.append(item)
             existingNames.insert(normalizedName)
@@ -82,14 +86,6 @@ struct QuickAddItemsView: View {
 
         try? modelContext.save()
         dismiss()
-        if addedCount > 0 {
-            onQuickAddCompleted(addedCount)
-        }
-    }
-}
-
-private extension String {
-    var normalizedItemName: String {
-        trimmingCharacters(in: .whitespacesAndNewlines).localizedLowercase
+        onQuickAddCompleted(addedCount, skippedDuplicateCount)
     }
 }

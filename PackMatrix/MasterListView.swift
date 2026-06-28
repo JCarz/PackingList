@@ -2,21 +2,28 @@ import SwiftUI
 import SwiftData
 
 struct MasterListView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \PackingItem.name) private var items: [PackingItem]
+    @Query private var checklistItems: [TripPackingItem]
     @State private var showingAddItem = false
     @State private var showingQuickAdd = false
+    @State private var itemPendingDeletion: PackingItem?
+    @State private var showingDeleteConfirmation = false
     @State private var toastMessage: String?
 
     var body: some View {
         List {
-            ForEach(ListGrouping.categoriesWithItems(from: items), id: \.0.id) { category, items in
+            ForEach(ListGrouping.categoriesWithItems(from: items), id: \.0.id) { category, categoryItems in
                 Section(category.name) {
-                    ForEach(items) { item in
+                    ForEach(categoryItems) { item in
                         NavigationLink {
                             ItemDetailView(item: item)
                         } label: {
                             ItemRow(item: item)
                         }
+                    }
+                    .onDelete { offsets in
+                        requestDeleteItems(at: offsets, from: categoryItems)
                     }
                 }
             }
@@ -46,10 +53,21 @@ struct MasterListView: View {
         }
         .sheet(isPresented: $showingQuickAdd) {
             NavigationStack {
-                QuickAddItemsView { addedCount in
-                    toastMessage = "Added \(addedCount) items"
+                QuickAddItemsView { addedCount, skippedDuplicateCount in
+                    showToast(QuickAddFeedback.message(addedCount: addedCount, skippedDuplicateCount: skippedDuplicateCount))
                 }
             }
+        }
+        .alert("Delete Item?", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                itemPendingDeletion = nil
+            }
+
+            Button("Delete", role: .destructive) {
+                deletePendingItem()
+            }
+        } message: {
+            Text("This will remove the item from the master list and any trip checklists.")
         }
         .overlay {
             if items.isEmpty {
@@ -66,6 +84,52 @@ struct MasterListView: View {
             }
         }
         .toast(message: $toastMessage)
+    }
+
+    private func requestDeleteItems(at offsets: IndexSet, from items: [PackingItem]) {
+        itemPendingDeletion = offsets.compactMap { offset in
+            items.indices.contains(offset) ? items[offset] : nil
+        }
+        .first
+
+        if itemPendingDeletion != nil {
+            showingDeleteConfirmation = true
+        }
+    }
+
+    private func deletePendingItem() {
+        guard let item = itemPendingDeletion else {
+            return
+        }
+
+        let itemID = item.id
+        let relatedChecklistItems = checklistItems.filter { $0.packingItem?.id == itemID }
+
+        for checklistItem in relatedChecklistItems {
+            checklistItem.trip?.checklistItems.removeAll { $0.id == checklistItem.id }
+            modelContext.delete(checklistItem)
+        }
+
+        item.category?.items.removeAll { $0.id == itemID }
+        modelContext.delete(item)
+
+        do {
+            try modelContext.save()
+            itemPendingDeletion = nil
+            toastMessage = "Item deleted"
+        } catch {
+            modelContext.rollback()
+            itemPendingDeletion = nil
+            toastMessage = "Could not delete item"
+        }
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = nil
+
+        DispatchQueue.main.async {
+            toastMessage = message
+        }
     }
 }
 
