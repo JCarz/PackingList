@@ -16,6 +16,7 @@ struct AddItemView: View {
     @State private var selectedTripTypes: Set<TripType> = []
     @State private var destinationsText = ""
     @State private var errorMessage: String?
+    @FocusState private var focusedField: AddItemField?
 
     var onItemAdded: () -> Void = { }
 
@@ -23,6 +24,11 @@ struct AddItemView: View {
         Form {
             Section("Item Details") {
                 TextField("Item Name", text: $name)
+                    .focused($focusedField, equals: .name)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .notes
+                    }
 
                 Picker("Category (Required)", selection: $selectedCategoryID) {
                     Text("Select Category").tag(nil as UUID?)
@@ -34,6 +40,11 @@ struct AddItemView: View {
                 Stepper("Quantity: \(quantity)", value: $quantity, in: 1...99)
                 Toggle("Always Pack", isOn: $isAlwaysPacked)
                 TextField("Notes", text: $notes, axis: .vertical)
+                    .focused($focusedField, equals: .notes)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .destinations
+                    }
             }
 
             Section("Rules") {
@@ -44,6 +55,11 @@ struct AddItemView: View {
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
+                    .focused($focusedField, equals: .destinations)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
             }
 
             if let errorMessage {
@@ -54,18 +70,29 @@ struct AddItemView: View {
             }
         }
         .navigationTitle("Add Item")
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    focusedField = nil
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    focusedField = nil
                     save()
                 }
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedCategory == nil)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    focusedField = nil
+                }
             }
         }
         .onAppear {
@@ -118,4 +145,10 @@ struct AddItemView: View {
         dismiss()
         onItemAdded()
     }
+}
+
+private enum AddItemField: Hashable {
+    case name
+    case notes
+    case destinations
 }

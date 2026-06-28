@@ -10,11 +10,17 @@ struct ItemDetailView: View {
     @State private var selectedCategoryID: UUID?
     @State private var originalName = ""
     @State private var toastMessage: String?
+    @FocusState private var focusedField: ItemDetailField?
 
     var body: some View {
         Form {
             Section("Item") {
                 TextField("Name", text: $item.name)
+                    .focused($focusedField, equals: .name)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .notes
+                    }
 
                 Picker("Category (Required)", selection: $selectedCategoryID) {
                     Text("Select Category").tag(nil as UUID?)
@@ -25,6 +31,11 @@ struct ItemDetailView: View {
 
                 Stepper("Quantity: \(item.quantity)", value: $item.quantity, in: 1...99)
                 TextField("Notes", text: $item.notes, axis: .vertical)
+                    .focused($focusedField, equals: .notes)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .destinations
+                    }
 
                 if item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Item name is required.")
@@ -48,13 +59,17 @@ struct ItemDetailView: View {
                 }
 
                 TextField("Destinations, separated by commas", text: $destinationsText)
+                    .focused($focusedField, equals: .destinations)
+                    .submitLabel(.done)
                     .onSubmit(updateDestinations)
             }
         }
         .navigationTitle(item.name)
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    focusedField = nil
                     updateName()
                     updateCategory()
                     updateDestinations()
@@ -62,6 +77,15 @@ struct ItemDetailView: View {
                     toastMessage = "Changes saved"
                 }
                 .disabled(!canSave)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    focusedField = nil
+                    updateDestinations()
+                }
             }
         }
         .onAppear {
@@ -120,4 +144,10 @@ struct ItemDetailView: View {
     private var canSave: Bool {
         !item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
     }
+}
+
+private enum ItemDetailField: Hashable {
+    case name
+    case notes
+    case destinations
 }

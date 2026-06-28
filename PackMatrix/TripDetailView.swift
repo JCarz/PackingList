@@ -222,12 +222,24 @@ private struct DuplicateTripView: View {
     @State private var tripType = TripType.weekend
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @FocusState private var focusedField: TripFormField?
 
     var body: some View {
         Form {
             Section("Trip") {
                 TextField("Trip Name", text: $name)
+                    .focused($focusedField, equals: .name)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .destination
+                    }
+
                 TextField("Destination", text: $destination)
+                    .focused($focusedField, equals: .destination)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
 
                 Picker("Trip Type", selection: $tripType) {
                     ForEach(TripType.allCases) { tripType in
@@ -253,15 +265,18 @@ private struct DuplicateTripView: View {
             }
         }
         .navigationTitle("Duplicate Trip")
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    focusedField = nil
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button {
+                    focusedField = nil
                     duplicateTrip()
                 } label: {
                     if isSaving {
@@ -271,6 +286,14 @@ private struct DuplicateTripView: View {
                     }
                 }
                 .disabled(!canSave || isSaving)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    focusedField = nil
+                }
             }
         }
         .onAppear {
@@ -327,11 +350,17 @@ private struct SaveTemplateView: View {
 
     @State private var templateName = ""
     @State private var errorMessage: String?
+    @FocusState private var isTemplateNameFocused: Bool
 
     var body: some View {
         Form {
             Section("Template") {
                 TextField("Template Name", text: $templateName)
+                    .focused($isTemplateNameFocused)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        isTemplateNameFocused = false
+                    }
 
                 if templateName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Template name is required.")
@@ -352,18 +381,29 @@ private struct SaveTemplateView: View {
             }
         }
         .navigationTitle("Save Template")
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    isTemplateNameFocused = false
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    isTemplateNameFocused = false
                     saveTemplate()
                 }
                 .disabled(!canSave)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    isTemplateNameFocused = false
+                }
             }
         }
         .onAppear {
@@ -439,6 +479,11 @@ private struct SaveTemplateView: View {
     }
 }
 
+private enum TripFormField: Hashable {
+    case name
+    case destination
+}
+
 private struct EditTripView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -451,12 +496,24 @@ private struct EditTripView: View {
     @State private var startDate = Date()
     @State private var endDate = Date()
     @State private var tripType = TripType.weekend
+    @FocusState private var focusedField: TripFormField?
 
     var body: some View {
         Form {
             Section("Trip") {
                 TextField("Trip Name", text: $name)
+                    .focused($focusedField, equals: .name)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .destination
+                    }
+
                 TextField("Destination", text: $destination)
+                    .focused($focusedField, equals: .destination)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
 
                 Picker("Trip Type", selection: $tripType) {
                     ForEach(TripType.allCases) { tripType in
@@ -471,18 +528,29 @@ private struct EditTripView: View {
             }
         }
         .navigationTitle("Edit Trip")
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    focusedField = nil
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    focusedField = nil
                     save()
                 }
                 .disabled(!canSave)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    focusedField = nil
+                }
             }
         }
         .onAppear {

@@ -23,6 +23,7 @@ struct CreateTripView: View {
     @State private var errorMessage: String?
     @State private var toastMessage: String?
     @State private var extraItems: [TripExtraItem] = []
+    @FocusState private var focusedField: CreateTripField?
 
     var onTripCreated: (Trip) -> Void = { _ in }
 
@@ -30,7 +31,18 @@ struct CreateTripView: View {
         Form {
             Section("Trip") {
                 TextField("Trip Name", text: $name)
+                    .focused($focusedField, equals: .name)
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .destination
+                    }
+
                 TextField("Destination", text: $destination)
+                    .focused($focusedField, equals: .destination)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
 
                 if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Trip name is required.")
@@ -113,6 +125,7 @@ struct CreateTripView: View {
                 }
 
                 Button {
+                    focusedField = nil
                     showingQuickAddExtraItems = true
                 } label: {
                     Label("Quick Add", systemImage: "plus")
@@ -160,6 +173,14 @@ struct CreateTripView: View {
             }
         }
         .navigationTitle("Create Trip")
+        .scrollDismissesKeyboard(.interactively)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    focusedField = nil
+                }
+        }
         .sheet(isPresented: $showingQuickAddExtraItems) {
             NavigationStack {
                 TripExtraItemsQuickAddView(existingExtraItems: extraItems) { addedItems, skippedCount in
@@ -177,6 +198,7 @@ struct CreateTripView: View {
 
             ToolbarItem(placement: .confirmationAction) {
                 Button {
+                    focusedField = nil
                     startTripCreation()
                 } label: {
                     if isSaving {
@@ -186,6 +208,14 @@ struct CreateTripView: View {
                     }
                 }
                 .disabled(!canCreateTrip || isSaving)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    focusedField = nil
+                }
             }
         }
         .confirmationDialog("Possible Duplicate Trip", isPresented: $showingDuplicateWarning) {
@@ -378,6 +408,11 @@ struct CreateTripView: View {
     }
 }
 
+private enum CreateTripField: Hashable {
+    case name
+    case destination
+}
+
 private enum TripStartingPoint: Hashable {
     case rules
     case template(UUID)
@@ -408,6 +443,7 @@ private struct TripExtraItemsQuickAddView: View {
 
     @State private var selectedCategoryID: UUID?
     @State private var itemNames = ""
+    @FocusState private var isItemNamesFocused: Bool
 
     var body: some View {
         Form {
@@ -423,6 +459,7 @@ private struct TripExtraItemsQuickAddView: View {
             Section("Items") {
                 TextEditor(text: $itemNames)
                     .frame(minHeight: 160)
+                    .focused($isItemNamesFocused)
 
                 Text("Use one item per line or separate items with commas.")
                     .font(.caption)
@@ -430,18 +467,36 @@ private struct TripExtraItemsQuickAddView: View {
             }
         }
         .navigationTitle("Quick Add")
+        .scrollDismissesKeyboard(.interactively)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isItemNamesFocused = false
+                }
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    isItemNamesFocused = false
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button("Add") {
+                    isItemNamesFocused = false
                     addItems()
                 }
                 .disabled(selectedCategoryID == nil || parsedItemNames.isEmpty)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    isItemNamesFocused = false
+                }
             }
         }
         .onAppear {

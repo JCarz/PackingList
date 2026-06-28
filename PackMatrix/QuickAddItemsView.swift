@@ -9,6 +9,7 @@ struct QuickAddItemsView: View {
 
     @State private var selectedCategoryID: UUID?
     @State private var itemNames = ""
+    @FocusState private var isItemNamesFocused: Bool
 
     var onQuickAddCompleted: (Int, Int) -> Void = { _, _ in }
 
@@ -26,21 +27,33 @@ struct QuickAddItemsView: View {
             Section("Items") {
                 TextEditor(text: $itemNames)
                     .frame(minHeight: 160)
+                    .focused($isItemNamesFocused)
             }
         }
         .navigationTitle("Quick Add")
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
+                    isItemNamesFocused = false
                     dismiss()
                 }
             }
 
             ToolbarItem(placement: .confirmationAction) {
                 Button("Add") {
+                    isItemNamesFocused = false
                     save()
                 }
                 .disabled(selectedCategory == nil || parsedItemNames.isEmpty)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("Done") {
+                    isItemNamesFocused = false
+                }
             }
         }
         .onAppear {
