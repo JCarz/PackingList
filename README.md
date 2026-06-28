@@ -50,19 +50,35 @@ The project is built with SwiftUI and SwiftData, with no authentication, backend
 
 ## Screenshots
 
-Screenshots are not committed yet. Suggested placeholders:
+### Trip Dashboard
 
 ![Trip Dashboard](docs/images/trip-dashboard.png)
 
+Displays active and archived trips, trip destinations, date ranges, packed item counts, and completion percentages.
+
+### Create Trip
+
 ![Create Trip](docs/images/create-trip.png)
 
-![Packing Checklist](docs/images/checklist.png)
+Shows the trip creation flow, including trip details, trip type selection, date selection, packing list source, and extra items.
 
-Additional screenshot candidates:
+### Packing Checklist
 
-![Master Packing List](docs/screenshots/master-list.png)
+![Packing Checklist](docs/images/packing-checklist.png)
 
-![Statistics](docs/screenshots/statistics.png)
+Shows the trip checklist experience with packing progress, remaining items, category grouping, and packed item state.
+
+### Master Packing List
+
+![Master Packing List](docs/images/master-list.png)
+
+Displays the reusable master inventory grouped by category, with packing rules summarized for each item.
+
+### Statistics
+
+![Statistics](docs/images/statistics.png)
+
+Summarizes total trips, packed item counts, the most packed item, and the most used packing category.
 
 ## Installation
 
