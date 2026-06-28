@@ -13,6 +13,8 @@ struct TripDetailView: View {
     @State private var showingSaveTemplate = false
     @State private var hidePackedItems = false
     @State private var toastMessage: String?
+    @State private var checklistItemsPendingRemoval: [TripPackingItem] = []
+    @State private var showingRemoveItemsConfirmation = false
 
     private var packedCount: Int {
         trip.checklistItems.filter(\.isPacked).count
@@ -68,7 +70,7 @@ struct TripDetailView: View {
                             ChecklistRow(checklistItem: checklistItem)
                         }
                         .onDelete { offsets in
-                            removeItems(at: offsets, from: visibleItems)
+                            requestRemoveItems(at: offsets, from: visibleItems)
                         }
                     } header: {
                         HStack {
@@ -129,23 +131,34 @@ struct TripDetailView: View {
         .sheet(isPresented: $showingEditTrip) {
             NavigationStack {
                 EditTripView(trip: trip) {
-                    toastMessage = "Trip saved"
+                    showToast("Trip saved")
                 }
             }
         }
         .sheet(isPresented: $showingDuplicateTrip) {
             NavigationStack {
                 DuplicateTripView(sourceTrip: trip) {
-                    toastMessage = "Trip duplicated"
+                    showToast("Trip duplicated")
                 }
             }
         }
         .sheet(isPresented: $showingSaveTemplate) {
             NavigationStack {
                 SaveTemplateView(trip: trip, existingTemplates: templates) {
-                    toastMessage = "Template saved"
+                    showToast("Template saved")
                 }
             }
+        }
+        .alert(removeItemsAlertTitle, isPresented: $showingRemoveItemsConfirmation) {
+            Button("Cancel", role: .cancel) {
+                checklistItemsPendingRemoval = []
+            }
+
+            Button("Remove", role: .destructive) {
+                removePendingItems()
+            }
+        } message: {
+            Text(removeItemsAlertMessage)
         }
         .overlay {
             if !hasVisibleChecklistItems {
@@ -170,24 +183,47 @@ struct TripDetailView: View {
         }
     }
 
-    private func removeItems(at offsets: IndexSet, from items: [TripPackingItem]) {
-        var didRemoveItem = false
+    private var removeItemsAlertTitle: String {
+        checklistItemsPendingRemoval.count == 1 ? "Remove Item?" : "Remove Items?"
+    }
 
-        for offset in offsets {
-            guard items.indices.contains(offset) else {
-                continue
-            }
+    private var removeItemsAlertMessage: String {
+        if checklistItemsPendingRemoval.count == 1 {
+            return "This will remove the item from this trip checklist."
+        }
 
-            let item = items[offset]
+        return "This will remove the selected items from this trip checklist."
+    }
+
+    private func requestRemoveItems(at offsets: IndexSet, from items: [TripPackingItem]) {
+        checklistItemsPendingRemoval = offsets.compactMap { offset in
+            items.indices.contains(offset) ? items[offset] : nil
+        }
+
+        if !checklistItemsPendingRemoval.isEmpty {
+            showingRemoveItemsConfirmation = true
+        }
+    }
+
+    private func removePendingItems() {
+        guard !checklistItemsPendingRemoval.isEmpty else {
+            return
+        }
+
+        for item in checklistItemsPendingRemoval {
             trip.checklistItems.removeAll { $0.id == item.id }
             modelContext.delete(item)
-            didRemoveItem = true
         }
 
-        try? modelContext.save()
-        if didRemoveItem {
-            toastMessage = "Item removed"
+        do {
+            try modelContext.save()
+            showToast(checklistItemsPendingRemoval.count == 1 ? "Item removed" : "Items removed")
+        } catch {
+            modelContext.rollback()
+            showToast("Could not remove item")
         }
+
+        checklistItemsPendingRemoval = []
     }
 
     private func regenerateChecklist() {
@@ -200,10 +236,18 @@ struct TripDetailView: View {
 
         do {
             try modelContext.save()
-            toastMessage = trip.isArchived ? "Trip archived" : "Trip restored"
+            showToast(trip.isArchived ? "Trip archived" : "Trip restored")
         } catch {
             modelContext.rollback()
-            toastMessage = "Could not update trip"
+            showToast("Could not update trip")
+        }
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = nil
+
+        DispatchQueue.main.async {
+            toastMessage = message
         }
     }
 }
@@ -723,7 +767,7 @@ private struct AddTripItemsView: View {
                             PackingListGenerator.manuallyAdd(item, to: trip, in: modelContext)
                             addedItemIDs.insert(item.id)
                             try? modelContext.save()
-                            toastMessage = "Item added"
+                            showToast("Item added")
                         } label: {
                             HStack {
                                 VStack(alignment: .leading) {
@@ -758,5 +802,13 @@ private struct AddTripItemsView: View {
             }
         }
         .toast(message: $toastMessage)
+    }
+
+    private func showToast(_ message: String) {
+        toastMessage = nil
+
+        DispatchQueue.main.async {
+            toastMessage = message
+        }
     }
 }

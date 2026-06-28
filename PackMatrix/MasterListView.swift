@@ -47,7 +47,7 @@ struct MasterListView: View {
         .sheet(isPresented: $showingAddItem) {
             NavigationStack {
                 AddItemView {
-                    toastMessage = "Item added"
+                    showToast("Item added")
                 }
             }
         }
@@ -116,11 +116,11 @@ struct MasterListView: View {
         do {
             try modelContext.save()
             itemPendingDeletion = nil
-            toastMessage = "Item deleted"
+            showToast("Item deleted")
         } catch {
             modelContext.rollback()
             itemPendingDeletion = nil
-            toastMessage = "Could not delete item"
+            showToast("Could not delete item")
         }
     }
 

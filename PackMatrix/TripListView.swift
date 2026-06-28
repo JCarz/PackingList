@@ -65,7 +65,7 @@ struct TripListView: View {
                 CreateTripView { trip in
                     createdTripToOpen = trip
                     recentlyDeletedTrips = []
-                    toastMessage = "Trip created"
+                    showToast("Trip created")
                 }
             }
         }
@@ -166,13 +166,13 @@ struct TripListView: View {
         do {
             try modelContext.save()
             recentlyDeletedTrips = deletedTripSnapshots
-            toastMessage = tripsPendingDeletion.count == 1 ? "Trip deleted" : "Trips deleted"
+            showToast(tripsPendingDeletion.count == 1 ? "Trip deleted" : "Trips deleted")
             tripsPendingDeletion = []
         } catch {
             modelContext.rollback()
             recentlyDeletedTrips = []
             tripsPendingDeletion = []
-            toastMessage = "Could not delete trip"
+            showToast("Could not delete trip")
         }
     }
 
@@ -198,10 +198,10 @@ struct TripListView: View {
 
         do {
             try modelContext.save()
-            toastMessage = snapshotsToRestore.count == 1 ? "Trip restored" : "Trips restored"
+            showToast(snapshotsToRestore.count == 1 ? "Trip restored" : "Trips restored")
         } catch {
             modelContext.rollback()
-            toastMessage = "Could not restore trip"
+            showToast("Could not restore trip")
         }
     }
 
@@ -210,10 +210,10 @@ struct TripListView: View {
 
         do {
             try modelContext.save()
-            toastMessage = "Trip archived"
+            showToast("Trip archived")
         } catch {
             modelContext.rollback()
-            toastMessage = "Could not archive trip"
+            showToast("Could not archive trip")
         }
     }
 
@@ -222,10 +222,16 @@ struct TripListView: View {
 
         do {
             try modelContext.save()
-            toastMessage = "Trip restored"
+            showToast("Trip restored")
         } catch {
             modelContext.rollback()
-            toastMessage = "Could not restore trip"
+            showToast("Could not restore trip")
+        }
+    }
+
+    private func showToast(_ message: String) {
+        DispatchQueue.main.async {
+            toastMessage = message
         }
     }
 }
