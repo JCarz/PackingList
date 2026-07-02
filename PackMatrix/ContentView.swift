@@ -27,6 +27,8 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selection: SidebarSection? = .masterList
+    @State private var compactSelection = SidebarSection.masterList
+    @AppStorage("hasSeededSampleData") private var hasSeededSampleData = false
 
     var body: some View {
         Group {
@@ -37,38 +39,45 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            SampleData.seedIfNeeded(in: modelContext)
+            seedSampleDataOnce()
         }
     }
 
     private var compactTabs: some View {
-        TabView {
-            NavigationStack {
-                MasterListView()
-            }
+        TabView(selection: $compactSelection) {
+            compactTab(.masterList)
             .tabItem {
                 Label("Master", systemImage: "square.grid.2x2")
             }
+            .tag(SidebarSection.masterList)
 
-            NavigationStack {
-                TripListView()
-            }
+            compactTab(.trips)
             .tabItem {
                 Label("Trips", systemImage: "suitcase")
             }
+            .tag(SidebarSection.trips)
 
-            NavigationStack {
-                StatisticsView()
-            }
+            compactTab(.statistics)
             .tabItem {
                 Label("Stats", systemImage: "chart.bar")
             }
+            .tag(SidebarSection.statistics)
 
-            NavigationStack {
-                DebugView()
-            }
+            compactTab(.debug)
             .tabItem {
                 Label("Debug", systemImage: "gearshape")
+            }
+            .tag(SidebarSection.debug)
+        }
+    }
+
+    @ViewBuilder
+    private func compactTab(_ section: SidebarSection) -> some View {
+        NavigationStack {
+            if compactSelection == section {
+                destination(for: section)
+            } else {
+                Color.clear
             }
         }
     }
@@ -82,18 +91,32 @@ struct ContentView: View {
             .navigationTitle("PackMatrix")
         } detail: {
             NavigationStack {
-                switch selection ?? .masterList {
-                case .masterList:
-                    MasterListView()
-                case .trips:
-                    TripListView()
-                case .statistics:
-                    StatisticsView()
-                case .debug:
-                    DebugView()
-                }
+                destination(for: selection ?? .masterList)
             }
         }
+    }
+
+    @ViewBuilder
+    private func destination(for section: SidebarSection) -> some View {
+        switch section {
+        case .masterList:
+            MasterListView()
+        case .trips:
+            TripListView()
+        case .statistics:
+            StatisticsView()
+        case .debug:
+            DebugView()
+        }
+    }
+
+    private func seedSampleDataOnce() {
+        guard !hasSeededSampleData else {
+            return
+        }
+
+        SampleData.seedIfNeeded(in: modelContext)
+        hasSeededSampleData = true
     }
 }
 

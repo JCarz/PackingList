@@ -4,7 +4,6 @@ import SwiftData
 struct MasterListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PackingItem.name) private var items: [PackingItem]
-    @Query private var checklistItems: [TripPackingItem]
     @State private var showingAddItem = false
     @State private var showingQuickAdd = false
     @State private var itemPendingDeletion: PackingItem?
@@ -47,7 +46,7 @@ struct MasterListView: View {
         .sheet(isPresented: $showingAddItem) {
             NavigationStack {
                 AddItemView {
-                    showToast("Item added")
+                    toastMessage = "Item added"
                 }
             }
         }
@@ -103,7 +102,7 @@ struct MasterListView: View {
         }
 
         let itemID = item.id
-        let relatedChecklistItems = checklistItems.filter { $0.packingItem?.id == itemID }
+        let relatedChecklistItems = fetchChecklistItems(for: itemID)
 
         for checklistItem in relatedChecklistItems {
             checklistItem.trip?.checklistItems.removeAll { $0.id == checklistItem.id }
@@ -116,11 +115,11 @@ struct MasterListView: View {
         do {
             try modelContext.save()
             itemPendingDeletion = nil
-            showToast("Item deleted")
+            toastMessage = "Item deleted"
         } catch {
             modelContext.rollback()
             itemPendingDeletion = nil
-            showToast("Could not delete item")
+            toastMessage = "Could not delete item"
         }
     }
 
@@ -129,6 +128,16 @@ struct MasterListView: View {
 
         DispatchQueue.main.async {
             toastMessage = message
+        }
+    }
+
+    private func fetchChecklistItems(for itemID: UUID) -> [TripPackingItem] {
+        do {
+            return try modelContext.fetch(FetchDescriptor<TripPackingItem>()).filter { checklistItem in
+                checklistItem.packingItem?.id == itemID
+            }
+        } catch {
+            return []
         }
     }
 }

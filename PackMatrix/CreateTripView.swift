@@ -276,7 +276,7 @@ struct CreateTripView: View {
         do {
             try modelContext.save()
             statusMessage = "Trip created."
-            showToast("Trip created")
+            toastMessage = "Trip created"
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 dismiss()

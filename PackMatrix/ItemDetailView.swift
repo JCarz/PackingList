@@ -74,7 +74,7 @@ struct ItemDetailView: View {
                     updateCategory()
                     updateDestinations()
                     try? modelContext.save()
-                    showToast("Changes saved")
+                    toastMessage = "Changes saved"
                 }
                 .disabled(!canSave)
             }
@@ -143,14 +143,6 @@ struct ItemDetailView: View {
 
     private var canSave: Bool {
         !item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory != nil
-    }
-
-    private func showToast(_ message: String) {
-        toastMessage = nil
-
-        DispatchQueue.main.async {
-            toastMessage = message
-        }
     }
 }
 
